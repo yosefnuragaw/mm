@@ -72,8 +72,8 @@ class ModelSelector:
         indices = np.random.choice(len(dsample), size=self.args.prior_size, replace=False)
         inverse_indices = np.setdiff1d(np.arange(len(dsample)), indices)
 
-        dprior = [data for data, _ in zip(dsample, indices) if _]
-        dinverse = [data for data, _ in zip(dsample, inverse_indices) if _]
+        dprior = [dsample[idx] for idx in indices]
+        dinverse = [dsample[idx] for idx in inverse_indices]
         # O(N.p)
         idx = 1
         for m in self.models: 
@@ -122,11 +122,11 @@ class ModelSelector:
             res.append(st)
             
             if self.args.strategy == "vanilla":
-                surv[np.nargmin(st)] = 0
+                surv[np.nanargmin(st)] = 0
             elif self.args.strategy == "halving":
                 temp_st = st.copy()
                 for _ in range (sum(surv) // 2):
-                    idx =np.nargmin(temp_st) 
+                    idx =np.nanargmin(temp_st) 
                     surv[idx] = 0
                     temp_st[idx] = np.nan
             else:
@@ -138,23 +138,23 @@ class ModelSelector:
     def ucb(self, data: List):#DONE O(T . N)
         dsample = self._sample(data)
         res = list()
-        states = [(0,0) for _ in range(len(self.models))]
+        states = [(idx,0,0) for idx in range(len(self.models))]
         #O(T . (N+b))
         for t in range(1,self.args.rounds): #O(T)
             indices = np.random.choice(len(dsample), size=round(self.args.eval_rate*len(dsample)), replace=False)
-            deval = [data for data, _ in zip(dsample, indices) if _]
+            deval = [dsample[idx] for idx in indices]
             scores = list()
-            for (n,q),m in zip(states,self.models): #O(N + b)
+            for (_,n,q) in states: #O(N + b)
                 scores.append(q+ self.args.coeff * math.sqrt(math.log(t)/ (n+1e-12)))
             
             idx = np.argmax(scores)
             ev = self.models[idx].evaluate(deval)
-            nt = states[idx][0]+len(indices)
-            qt = states[idx][1]+ ev.get("score")/ nt
+            nt = states[idx][1]+len(indices)
+            qt = states[idx][2]+ ev.get("score")/ nt
 
-            states[idx] = (nt,qt)
+            states[idx] = (idx,nt,qt)
             
-        return heapq.nlargest(self.args.k_model, states, key=lambda x: x[1])
+        return heapq.nlargest(self.args.k_model, states, key=lambda x: x[2])
 
 # if __name__ == "__main__":
 #     sampler = ModelSelector(models= [])

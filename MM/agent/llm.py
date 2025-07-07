@@ -28,10 +28,7 @@ class LLMAgent:
                 base_url=f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/openapi",
                 api_key=credentials.token,
             )
-        else:
-            self.client = genai.Client(
-            vertexai=True, api_key=os.environ["VERTEX_API_KEY"]
-            )
+            
         self.prompt_builder = get_prompt_builder(self.args.prompt_strategy)
         self.message_processor = MessageProcessor(args)
         self.evaluator = QueryEvaluator(args)
@@ -44,7 +41,7 @@ class LLMAgent:
         return credentials,location,project_id
 
     def call_llm(self, messages, instance_id=None, round_num=None):
-        max_retries = 13
+        max_retries = 20
         retry_count = 0
         
         while retry_count < max_retries:
@@ -66,9 +63,6 @@ class LLMAgent:
                     
             except Exception as e:
                 retry_count += 1
-                instance_info = f" for {instance_id}" if instance_id else ""
-                round_info = f" (round {round_num})" if round_num is not None else ""
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] LLM Error{instance_info}{round_info}: {e}. Retrying ({retry_count}/{max_retries})...")
                 if retry_count >= max_retries:
                     return f"ERROR: Failed to get response after {max_retries} retries"
                 

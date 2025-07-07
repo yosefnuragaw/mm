@@ -36,7 +36,7 @@ class ToolRegistry:
     def load_tools(self):
         logger.info("Loading tools...")
 
-        import MM.agent.servers.tools as tools_package
+        import tools as tools_package
         
         for _, module_name, is_pkg in pkgutil.iter_modules(tools_package.__path__, tools_package.__name__ + '.'):
             if not is_pkg:

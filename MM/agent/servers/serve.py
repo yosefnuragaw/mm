@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from typing import Dict, Any, List
 import logging
 
-from MM.agent.servers.utils.tool_registry import ToolRegistry
+from utils.tool_registry import ToolRegistry
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -68,3 +68,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    print("✅ Server running!")

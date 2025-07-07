@@ -40,28 +40,61 @@ class SpiderAgentPromptBuilder(BasePromptBuilder):
         db_info = self.get_database_info(item['db_id'], args)
         
         user_content = f"""Question: {item['instruction']}
-External Knowledge: {external_knowledge_content if external_knowledge_content else 'None'}
+        External Knowledge: {external_knowledge_content if external_knowledge_content else 'None'}
 
-You are in the folder contains schema, the database name is {item['db_id']}, the database contains schema_name:
-```bash
-ls {os.path.join(args.databases_path, item['db_id'])}
-```
-```output
-{db_info}
-```
+        You are in the folder contains schema, the database name is {item['db_id']}, the database contains schema_name:
+        ```bash
+        ls {os.path.join(args.databases_path, item['db_id'])}
+        ```
+        ```output
+        {db_info}
+        ```
 
-When referencing tables, you must use the fully qualified three-part naming convention: database_name.schema_name.table_name. Now help me write the SQL query to answer the question. """
+        When referencing tables, you must use the fully qualified three-part naming convention: database_name.schema_name.table_name. Now help me write the SQL query to answer the question. """
 
         return [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content}
         ]
 
+class BirdAgentPromptBuilder(BasePromptBuilder):
 
+    def get_database_info(self, db_id, args):
+        """Get database directory listing"""
+        db_path = os.path.join(args.databases_path, db_id)
+        try:
+            result = subprocess.run(['ls', db_path], capture_output=True, text=True)
+            return result.stdout.strip()
+        except Exception as e:
+            return f"Error listing database: {str(e)}"
+
+    
+    def build_initial_prompt(self, item, args):
+        system_prompt = self.load_system_prompt(args)
+        db_info = self.get_database_info(item['db_id'], args)
+        
+        db_path = os.path.join(args.databases_path, item['db_id'])
+        user_content = f"""Question: {item['instruction']}
+
+        You are in the folder contains tables, the databases contains tables:
+        ```bash
+        ls {db_path}
+        ```
+        ```output
+        {db_info}
+        ```
+
+        When referencing tables, you must use the table_name only!. Now help me write the SQL query to answer the question. """
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content}
+        ]
 
 def get_prompt_builder(strategy):
     builders = {
         "spider-agent": SpiderAgentPromptBuilder(),
+        "bird-agent": BirdAgentPromptBuilder(),
 
     }
     

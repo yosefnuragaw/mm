@@ -53,9 +53,6 @@ def execute_snowflake_sql(sql: str, **kwargs) -> Dict[str, Any]:
         # Execute SQL query
         cursor.execute(sql)
         
-        # First print success message
-        print("Query executed successfully")
-        
         # Fetch results if the query returns data
         if cursor.description:
             headers = [desc[0] for desc in cursor.description]

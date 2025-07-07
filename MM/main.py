@@ -20,7 +20,7 @@ def selector_config()->argparse.Namespace:
     #Succesive Reject
     parser.add_argument("--eval_size", type=int, default=16)
     parser.add_argument("--strategy", default="vanilla", help="['vanilla', 'halving']")
-    args = parser.parse_args()
+    
 
     #UCB
     parser.add_argument("--eval_rate", type=float, default=0.2)
@@ -28,6 +28,7 @@ def selector_config()->argparse.Namespace:
     parser.add_argument("--coeff", type=float, default=0.5)
     parser.add_argument("--rounds", type=int, default=5)
 
+    args = parser.parse_args()
     return args
 
 def model_config(model:str) -> argparse.Namespace:
@@ -55,12 +56,12 @@ def model_config(model:str) -> argparse.Namespace:
     # Execution settings
     parser.add_argument("--api_host", default="localhost", help="API host")
     parser.add_argument("--api_port", default="5000", help="API port")
-    parser.add_argument("--max_rounds", type=int, default=20, help="Max conversation rounds")
+    parser.add_argument("--max_rounds", type=int, default=10, help="Max conversation rounds")
     parser.add_argument("--num_threads", type=int, default=4, help="Number of threads")
     parser.add_argument("--rollout_number", type=int, default=1, help="Number of rollouts per example")
 
     # Evaluation settings
-    parser.add_argument("--max_query", type=int , default=1000, help="Number of max row")
+    parser.add_argument("--max_query", type=int , default=50000, help="Number of max row")
     parser.add_argument("--env", default="snowflake", help="Environment for SQL excution ")
 
     args = parser.parse_args()

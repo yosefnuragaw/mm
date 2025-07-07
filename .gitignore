@@ -2,4 +2,9 @@ secret/
 .env
 MM/utils/credential/
 sb.py
-MM/__pycache__/
+MM/__pycache__
+MM/agent/__pycache__
+MM/dataset/minidev_0703/minidev/MINIDEV
+MM/dataset/minidev_0703/minidev/MINIDEV_postgresql
+
+

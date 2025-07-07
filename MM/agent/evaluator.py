@@ -7,6 +7,7 @@ import io
 import csv
 import math 
 import glob
+import psycopg2
 
 load_dotenv() 
 
@@ -16,7 +17,7 @@ class QueryEvaluator:
         self.env = {}
 
         assert os.path.exists(args.condition_path) and args.condition_path.endswith(".jsonl"), \
-            f"Invalid condition_path, must be a valid jsonl file: {condition_path}"
+            f"Invalid condition_path, must be a valid jsonl file: {args.condition_path}"
 
         self.cond = {}
         with open(args.condition_path, "r") as f:
@@ -31,8 +32,18 @@ class QueryEvaluator:
             snowflake_credential = json.load(open(os.environ["SF_CREDENTIAL_PATH"]))
             self.env[self.args.env] = snowflake.connector.connect(**snowflake_credential)
 
-    def run_query_sf(self, query:str):
-        with self.env["snowflake"].cursor() as cursor:
+        if self.args.env == "postgre" and self.args.env not in self.env.keys() :
+            self.env[self.args.env] = psycopg2.connect(
+                    dbname=self.args.db_name,
+                    user=self.args.username,
+                    password=self.args.password,
+                    host=self.args.host,
+                    port=self.args.port
+                )
+            self.env[self.args.env].autocommit = True
+            
+    def run_query(self, query:str):
+        with self.env[self.args.env].cursor() as cursor:
             try:
                 cursor.execute(query)
                 column_info = cursor.description
@@ -66,6 +77,17 @@ class QueryEvaluator:
                 return False
         return True
 
+    def load_csv(self,path):
+        try:
+            gold = pd.read_csv(path)
+            if gold.shape[1] == 0:
+                gold = pd.DataFrame()
+        except pd.errors.EmptyDataError:
+            gold = pd.DataFrame()
+        except FileNotFoundError:
+            gold = pd.DataFrame()
+
+        return gold
 
     def evaluate_query(self, item , query):
         tolerance = 1e-2
@@ -76,7 +98,7 @@ class QueryEvaluator:
 
         multi_table = False
         if os.path.exists(single_path):
-            golds = pd.read_csv(single_path)
+            golds = self.load_csv(single_path)
         else:
             pattern = os.path.join(self.args.gold_path, f"{item['instance_id']}_*.csv")
             matching_files = sorted(glob.glob(pattern))
@@ -84,10 +106,10 @@ class QueryEvaluator:
             if not matching_files:
                 raise FileNotFoundError(f"No files found for base: {pattern}")
             
-            golds = [pd.read_csv(p) for p in matching_files]
+            golds = [self.load_csv(p) for p in matching_files]
             multi_table = True
         
-        pred_df = self.run_query_sf(query)
+        pred_df = self.run_query(query)
 
         if not multi_table:
             if condition_cols != []:
