@@ -10,8 +10,7 @@ import glob
 import psycopg2
 
 load_dotenv() 
-
-class QueryEvaluator:
+class BaseEvaluator:
     def __init__(self,args):
         self.args = args
         self.env = {}
@@ -26,6 +25,19 @@ class QueryEvaluator:
                 instance_id = obj.get("instance_id")
                 if instance_id is not None:
                     self.cond[instance_id] = obj
+
+    def run(self):
+        return None
+    
+    def evaluate_query(self,*args, **kwargs):
+        raise NotImplementedError("Not Implemented!")
+    
+    def end(self):
+        return None
+    
+class QueryEvaluator(BaseEvaluator):
+    def __init__(self, args):
+        super().__init__(args)
 
     def run(self):
         if self.args.env == "snowflake" and self.args.env not in self.env.keys() :
@@ -168,3 +180,18 @@ class QueryEvaluator:
                     del self.env[key]
             except Exception as e:
                 print(f"[WARNING] Closing DB {key} raise error: {e}")
+
+class AnnotateEvaluator(BaseEvaluator):
+    def __init__(self, args):
+        super().__init__(args)
+
+    def evaluate_query(self, item , result):
+        if result == None:
+            return 0.0
+        
+        label = self.cond[item['instance_id']].get("label")
+        result = [s.strip().strip('"') for s in result.split(",")]
+        if len(label) != len(result):
+            return 0.0
+
+        return 1.0 if result == label else 0.0

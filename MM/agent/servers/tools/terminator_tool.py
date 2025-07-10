@@ -1,11 +1,8 @@
 from typing import Dict, Any
 import logging
 
-logger = logging.getLogger(__name__)
-
 def terminate(answer: str, task_completed: str = "false", **kwargs) -> Dict[str, Any]:
     output = f"EXECUTION RESULT of [terminate]:\n{answer}"
-
     return {
         "content": output
     }

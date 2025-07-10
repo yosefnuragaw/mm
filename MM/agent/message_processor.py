@@ -72,7 +72,7 @@ class MessageProcessor:
     
     def parse_query(self, item, content):
         """Parse assistant message, separate content and tool_calls"""
-        tool_call_pattern = r'tool_call>(.*?)</tool_call>'
+        tool_call_pattern = r'<tool_call>(.*?)</tool_call>'
         matches = list(re.finditer(tool_call_pattern, content, re.DOTALL))
         
         if not matches:
@@ -89,7 +89,7 @@ class MessageProcessor:
     def parse_tool_calls(self, content, item):
         """Parse tool calls and add work_dir parameter for execute_bash"""
         tool_calls = []
-        pattern = r'tool_call>(.*?)</tool_call>'
+        pattern = r'<tool_call>(.*?)</tool_call>'
         matches = re.findall(pattern, content, re.DOTALL)
         
         if matches:
@@ -133,7 +133,6 @@ class MessageProcessor:
             response.raise_for_status()
             
             api_response = response.json()
-            # print({"res":api_response.get("content")[:80]})
             if isinstance(api_response, list):
                 return api_response
             elif isinstance(api_response, dict):

@@ -10,12 +10,12 @@ import time
 import pandas as pd
 from datetime import datetime
 
-
 from MM.agent.prompt_builder import get_prompt_builder
 from MM.agent.message_processor import MessageProcessor
-from MM.agent.evaluator import QueryEvaluator
+from MM.agent.evaluator import QueryEvaluator,AnnotateEvaluator
 
 load_dotenv()
+
 
 class LLMAgent:
     def __init__(self, args):
@@ -31,7 +31,11 @@ class LLMAgent:
             
         self.prompt_builder = get_prompt_builder(self.args.prompt_strategy)
         self.message_processor = MessageProcessor(args)
-        self.evaluator = QueryEvaluator(args)
+
+        if args.task == "text2sql":
+            self.evaluator = QueryEvaluator(args)
+        elif args.task == "cta":
+            self.evaluator = AnnotateEvaluator(args)
 
     def _initiate_google_cred(self):
         project_id = os.getenv("PROJECT_ID")
@@ -85,10 +89,7 @@ class LLMAgent:
             messages = self.prompt_builder.build_initial_prompt(item, self.args)
             conversation_history = deepcopy(messages)
             terminated = False
-            round = 0
             for round_num in range(self.args.max_rounds):
-                # print(f"Processing {instance_id}, round {round_num + 1}")
-
                 llm_response = self.call_llm(messages, instance_id, round_num + 1)
                 
                 if llm_response.startswith("ERROR:"):
@@ -105,7 +106,6 @@ class LLMAgent:
                     llm_response, item, messages, conversation_history
                 )
                 
-                round = round_num
                 if result.get("terminated"):
                     terminated = True
                     break
@@ -120,9 +120,7 @@ class LLMAgent:
                 "last_messages" : messages[-1],
                 "terminated": terminated
             }
-            
-            
-            status = "TERMINATED" if terminated else "INCOMPLETE"
+            # status = "TERMINATED" if terminated else "INCOMPLETE"
             # print(f"Completed: {instance_id}/{round}) - {status}")
             
             return result
@@ -146,10 +144,9 @@ class LLMAgent:
         for it in items:
             result = self.process_single_item(it)
             if result.get("terminated"):
-
-                query = self.message_processor.parse_query(it, result.get("last_messages").get("content"))
-
-                score = self.evaluator.evaluate_query(it, query)
+         
+                answer = self.message_processor.parse_query(it, result.get("last_messages").get("content"))
+                score = self.evaluator.evaluate_query(it, answer)
 
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] LLMAgent(name={self.args.model}) | Instance: {it.get('instance_id')} | Scored :{score==1}")
                 acc += score

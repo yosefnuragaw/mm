@@ -1,5 +1,6 @@
 import os
 import subprocess
+import pickle
 
 class BasePromptBuilder:
     def load_system_prompt(self, args):
@@ -99,3 +100,46 @@ def get_prompt_builder(strategy):
     }
     
     return builders.get(strategy, SpiderAgentPromptBuilder())
+
+
+class CTAPromptBuilder(BasePromptBuilder):
+
+    def get_domain(self,args):
+        """Get database directory listing"""
+        domain = os.path.join(args.domain_path)
+        try:
+            with open(domain, 'rb') as f:
+                loaded_classes = pickle.load(f)
+            return loaded_classes
+        except Exception as e:
+            return f"Error opening domain: {str(e)}"
+
+    
+    def build_initial_prompt(self, item, args):
+        system_prompt = self.load_system_prompt(args)
+        domain_info = self.get_domain(args)
+        
+        user_content = f"""Question: Annotate each column type based on
+
+        {domain_info}
+
+        The tables contains {len(item.get('columns'))} tables:
+
+        {item.get('columns')}
+
+        Now Annotate each column sorted by index."""
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content}
+        ]
+
+def get_prompt_builder(strategy):
+    builders = {
+        "spider-agent": SpiderAgentPromptBuilder(),
+        "bird-agent": BirdAgentPromptBuilder(),
+        "cta-agent": CTAPromptBuilder(),
+
+    }
+    
+    return builders.get(strategy, None)
