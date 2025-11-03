@@ -92,16 +92,6 @@ class BirdAgentPromptBuilder(BasePromptBuilder):
             {"role": "user", "content": user_content}
         ]
 
-def get_prompt_builder(strategy):
-    builders = {
-        "spider-agent": SpiderAgentPromptBuilder(),
-        "bird-agent": BirdAgentPromptBuilder(),
-
-    }
-    
-    return builders.get(strategy, SpiderAgentPromptBuilder())
-
-
 class CTAPromptBuilder(BasePromptBuilder):
 
     def get_domain(self,args):

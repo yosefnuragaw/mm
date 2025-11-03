@@ -137,22 +137,21 @@ class ModelSelector:
 
     def ucb(self, data: List):#DONE O(T . N)
         dsample = self._sample(data)
-        res = list()
-        states = [(idx,0,0) for idx in range(len(self.models))]
+        states = [(0,0) for idx in range(len(self.models))]
         #O(T . (N+b))
         for t in range(1,self.args.rounds): #O(T)
             indices = np.random.choice(len(dsample), size=round(self.args.eval_rate*len(dsample)), replace=False)
             deval = [dsample[idx] for idx in indices]
             scores = list()
-            for (_,n,q) in states: #O(N + b)
+            for (n,q) in states: #O(N + b)
                 scores.append(q+ self.args.coeff * math.sqrt(math.log(t)/ (n+1e-12)))
             
             idx = np.argmax(scores)
             ev = self.models[idx].evaluate(deval)
-            nt = states[idx][1]+len(indices)
-            qt = states[idx][2]+ ev.get("score")/ nt
+            nt = states[idx][0]+len(indices)
+            qt = states[idx][1]+ ev.get("score")/ nt
 
-            states[idx] = (idx,nt,qt)
+            states[idx] = (nt,qt)
             
         return heapq.nlargest(self.args.k_model, states, key=lambda x: x[2])
 

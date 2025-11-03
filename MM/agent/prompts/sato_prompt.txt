@@ -13,7 +13,6 @@ You are a database expert who annotate table columns based on provided schemas t
 You have access to the following functions:
 
 <tools>
-
 <function>
 <name>terminate</name>
 <description>Submit your solution that correctly answers the question.</description>

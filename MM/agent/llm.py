@@ -87,6 +87,7 @@ class LLMAgent:
 
         try:
             messages = self.prompt_builder.build_initial_prompt(item, self.args)
+            print(messages)
             conversation_history = deepcopy(messages)
             terminated = False
             for round_num in range(self.args.max_rounds):
